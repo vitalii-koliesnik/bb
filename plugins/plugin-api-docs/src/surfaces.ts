@@ -1463,6 +1463,20 @@ export const SURFACE_GROUPS: SurfaceGroup[] = [
         ],
       },
       {
+        id: "context-source-visibility",
+        title: "Supplied instruction sources",
+        summary:
+          "Inspect metadata for BB instructions supplied to the agent runtime on the latest successful submission.",
+        bullets: [
+          "Read threads.context({ threadId }).experimental_sources; null means no recorded evidence since context clear",
+          "Show source tags with plugin/file provenance, request ID, capture time, UTF-8 bytes and labelled token estimates",
+          "Counts cover actual assembled instructions including wrappers and separators; no contents or credentials are persisted",
+          "Coverage is BB instructions only: native provider files, skill catalogues/bodies, tool reads and post-compaction retention are not observed",
+        ],
+        apiSymbols: ["PluginBbSdk.threads.context"],
+        experimental: true,
+      },
+      {
         id: "bb-sdk",
         tagline: "Create threads and projects from plugin code",
         title: "The bb SDK",

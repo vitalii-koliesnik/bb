@@ -1,3 +1,4 @@
+import { contextSourcesSnapshotSchema } from "./context-sources.js";
 import { contextSnapshotSchema } from "./context-snapshot.js";
 import { z } from "zod";
 import {
@@ -763,6 +764,11 @@ const unscopedSystemEventSchema = z.discriminatedUnion("type", [
       threadId: z.string(),
     })
     .merge(systemThreadInterruptedEventDataSchema),
+  z.object({
+    type: z.literal("system/context-supplied"),
+    threadId: z.string(),
+    snapshot: contextSourcesSnapshotSchema,
+  }),
   z
     .object({
       type: z.literal("system/operation"),

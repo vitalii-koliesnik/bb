@@ -1734,6 +1734,20 @@ describe("thread runtime config", () => {
         );
 
         const instructions = runtimeConfig.instructions;
+        expect(runtimeConfig.contextSources.total.bytes).toBe(
+          Buffer.byteLength(instructions),
+        );
+        expect(
+          runtimeConfig.contextSources.sources.map((source) => source.pluginId),
+        ).not.toContain("nuller");
+        expect(
+          runtimeConfig.contextSources.sources.find(
+            (source) => source.pluginId === "verbose",
+          )?.characters,
+        ).toBeLessThan(5000);
+        expect(JSON.stringify(runtimeConfig.contextSources)).not.toContain(
+          longBody,
+        );
         expect(instructions).not.toContain(
           'The following instructions come from the BB plugin "nuller":',
         );

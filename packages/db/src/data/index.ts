@@ -320,6 +320,7 @@ export {
   insertEvents,
   listActiveBackgroundTaskCountsByThreadIds,
   listContextWindowUsageRows,
+  getLatestContextSourcesRow,
   getLatestTokenUsageRow,
   listEvents,
   listStoredConversationOutlineEventRows,

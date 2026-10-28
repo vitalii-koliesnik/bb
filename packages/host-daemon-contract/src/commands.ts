@@ -1,3 +1,4 @@
+import { contextSourceBundleSchema } from "@bb/domain";
 import {
   desktopBrowserBrokerChallengeSchema,
   desktopBrowserBrokerProofSchema,
@@ -218,6 +219,7 @@ const hostDaemonThreadRuntimeContextSchema = z
     bridgeLaunch: hostDaemonBridgeLaunchSchema,
     options: runtimeThreadExecutionOptionsSchema,
     instructions: z.string().min(1),
+    contextSources: contextSourceBundleSchema.optional(),
     dynamicTools: z.array(dynamicToolSchema),
     contributedEnv: z.array(hostDaemonContributedEnvEntrySchema).default([]),
     injectedSkillSources: z.array(hostDaemonInjectedSkillSourceSchema),

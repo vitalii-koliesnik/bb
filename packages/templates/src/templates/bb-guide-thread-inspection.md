@@ -156,3 +156,11 @@ The SDK uses `threads.tabs.get({ threadId })` and
 `threads.tabs.update({ threadId, expectedRevision, tabs })` for the same state.
 Selection stays local to each client. Plugin authors can find registration and
 navigation details in the Plugin Guide's Thread side-panel tabs surface.
+
+  On builds with source visibility, `thread context --json` also returns
+  `experimental_sources`: metadata for BB instructions supplied to the runtime
+  on the latest successful submission. It is null when no evidence exists since
+  context clear. Character/4 token estimates include wrappers; they are separate
+  from provider usage. Provider-native documents, skill bodies/catalogues, tool
+  reads and retention after compaction are not covered. No source bodies are
+  stored. Text output labels this coverage and each source estimate.

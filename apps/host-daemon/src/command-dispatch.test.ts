@@ -2463,3 +2463,63 @@ describe("dispatchCommand", () => {
     });
   });
 });
+
+describe("context source submission evidence", () => {
+  it.each([false, true])(
+    "records metadata only after a successful runtime submission (reject=%s)",
+    async (reject) => {
+      const runtime = createRuntime();
+      if (reject)
+        vi.mocked(runtime.runTurn).mockRejectedValueOnce(
+          new Error("submission rejected"),
+        );
+      const manager = new RuntimeManager({
+        createRuntime: () => runtime,
+        provisionWorkspace: async () => createWorkspace(),
+      });
+      const command = createTurnSubmitCommand({
+        mode: "start",
+      });
+      command.resumeContext.contextSources = {
+        sources: [],
+        omittedSources: 0,
+        total: {
+          characters: 11,
+          bytes: 11,
+          estimatedTokens: 3,
+          sha256: "a".repeat(64),
+        },
+      };
+      const emit = vi.fn();
+      const result = dispatchCommand(command, {
+        dataDir: "/tmp/bb-data",
+        logger: silentLogger,
+        eventSink: { emit, flush: vi.fn(async () => undefined) },
+        fetchProjectAttachment: async () => {
+          throw new Error("Unexpected attachment");
+        },
+        fetchPluginHostArtifact: fetchDispatchTestArtifact,
+        ...unexpectedProviderMaintenance,
+        runtimeManager: manager,
+        threadStorageRootPath: "/tmp/bb-thread-storage",
+      });
+      if (reject) {
+        await expect(result).rejects.toThrow("submission rejected");
+        expect(emit).not.toHaveBeenCalled();
+      } else {
+        await result;
+        expect(emit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            event: expect.objectContaining({
+              type: "system/context-supplied",
+              snapshot: expect.objectContaining({
+                requestId: command.requestId,
+              }),
+            }),
+          }),
+        );
+      }
+      await manager.shutdownAll();
+    },
+  );
+});

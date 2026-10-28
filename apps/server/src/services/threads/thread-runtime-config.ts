@@ -1,9 +1,11 @@
+import { createInstructionAssembly } from "./context-source-measurement.js";
 import {
   resolveHostEnvironment,
   mergeHostAndProviderEnvironment,
 } from "../hosts/host-environment.js";
 import { getEnvironment, getHost, getProject } from "@bb/db";
 import type {
+  ContextSourceBundle,
   DynamicTool,
   InstructionMode,
   PermissionEscalation,
@@ -66,6 +68,7 @@ export interface ResolvedThreadRuntimeCommandConfig {
   injectedSkillSources: HostDaemonInjectedSkillSource[];
   instructionMode: InstructionMode;
   instructions: string;
+  contextSources: ContextSourceBundle;
   projectId: string;
   providerId: string;
   threadStoragePath: string;
@@ -218,13 +221,29 @@ export async function resolveThreadRuntimeCommandConfig(
   const dynamicTools = dynamicToolContributions.map(
     (contribution) => contribution.tool,
   );
-  const instructionSections: string[] = [];
+  const assembly = createInstructionAssembly();
   for (const contribution of dynamicToolContributions) {
     if (!contribution.instructions) continue;
     if (contribution.pluginId === null) {
-      instructionSections.push(contribution.instructions);
+      assembly.append(
+        {
+          id: `core:${contribution.tool.name}`,
+          label: contribution.tool.name,
+          kind: "core-instructions",
+          pluginId: null,
+          path: null,
+        },
+        contribution.instructions,
+      );
     } else {
-      instructionSections.push(
+      assembly.append(
+        {
+          id: `tool:${contribution.pluginId}:${contribution.tool.name}`,
+          label: `${contribution.pluginId} / ${contribution.tool.name}`,
+          kind: "plugin-instructions",
+          pluginId: contribution.pluginId,
+          path: null,
+        },
         `The following instructions come from the BB plugin "${contribution.pluginId}" for its tool "${contribution.tool.name}":`,
         contribution.instructions,
       );
@@ -252,30 +271,58 @@ export async function resolveThreadRuntimeCommandConfig(
     if (text.length > PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS) {
       text = text.slice(0, PLUGIN_INSTRUCTION_CONTRIBUTION_MAX_CHARS);
     }
-    instructionSections.push(
+    assembly.append(
+      {
+        id: `plugin:${contribution.pluginId}`,
+        label: contribution.pluginId,
+        kind: "plugin-instructions",
+        pluginId: contribution.pluginId,
+        path: null,
+      },
       `The following instructions come from the BB plugin "${contribution.pluginId}":`,
       text,
     );
   }
   for (const contribution of conditionalConfiguration.dynamicInstructions) {
-    instructionSections.push(
+    assembly.append(
+      {
+        id: `dynamic:${contribution.pluginId}`,
+        label: `${contribution.pluginId} (dynamic)`,
+        kind: "plugin-instructions",
+        pluginId: contribution.pluginId,
+        path: null,
+      },
       `The following dynamic instructions come from the BB plugin "${contribution.pluginId}":`,
       contribution.text,
     );
   }
   if (dataDirAgentInstructions) {
-    instructionSections.push(
+    assembly.append(
+      {
+        id: "user-instructions",
+        label: "User instructions",
+        kind: "user-instructions",
+        pluginId: null,
+        path: `<dataDir>/${DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH}`,
+      },
       `The following user instructions come from <dataDir>/${DATA_DIR_AGENT_INSTRUCTIONS_RELATIVE_PATH}:`,
       dataDirAgentInstructions,
     );
   }
   if (workspaceAgentContext.agentInstructions) {
-    instructionSections.push(
+    assembly.append(
+      {
+        id: "workspace-instructions",
+        label: WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH,
+        kind: "workspace-instructions",
+        pluginId: null,
+        path: `${workspacePath}/${WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH}`,
+      },
       `The following workspace instructions come from ${WORKSPACE_AGENT_INSTRUCTIONS_RELATIVE_PATH}:`,
       workspaceAgentContext.agentInstructions,
     );
   }
-  const instructions = instructionSections.join("\n\n");
+  const { instructions, contextSources } = assembly.finish();
   const threadStoragePath = await requireLiveThreadStoragePath(deps, {
     hostId: args.environment.hostId,
     threadId: args.thread.id,
@@ -287,6 +334,7 @@ export async function resolveThreadRuntimeCommandConfig(
     injectedSkillSources,
     instructionMode: "append",
     instructions,
+    contextSources,
     projectId: args.thread.projectId,
     providerId: args.thread.providerId,
     threadStoragePath,

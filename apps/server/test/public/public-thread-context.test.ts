@@ -41,7 +41,7 @@ describe("recorded thread context API", () => {
         itemKind: null,
         parentToolCallId: null,
       };
-      expect(await read()).toEqual({ usage: null });
+      expect(await read()).toEqual({ usage: null, experimental_sources: null });
       insertEvents(harness.db, harness.hub, [
         {
           ...base,
@@ -79,6 +79,7 @@ describe("recorded thread context API", () => {
         },
       ]);
       expect(await read()).toEqual({
+        experimental_sources: null,
         usage: {
           usedTokens: 100,
           modelContextWindow: 1_000,
@@ -107,6 +108,7 @@ describe("recorded thread context API", () => {
         },
       ]);
       expect(await read()).toEqual({
+        experimental_sources: null,
         usage: { usedTokens: 200, modelContextWindow: 1_000, estimated: false },
       });
       insertEvents(harness.db, harness.hub, [
@@ -122,7 +124,7 @@ describe("recorded thread context API", () => {
           }),
         },
       ]);
-      expect(await read()).toEqual({ usage: null });
+      expect(await read()).toEqual({ usage: null, experimental_sources: null });
     });
   });
 
@@ -217,5 +219,76 @@ describe("recorded thread context API", () => {
         (await harness.app.request("/api/v1/threads/missing/context")).status,
       ).toBe(404);
     });
+  });
+});
+
+it("reads only this thread's latest supplied metadata and resets it after context clear", async () => {
+  await withTestHarness(async (harness) => {
+    const { thread } = seedThreadFixture(harness);
+    const other = seedThreadFixture(harness).thread;
+    const supplied = {
+      requestId: "request-1",
+      capturedAt: "2026-10-28T00:00:00Z",
+      boundary: "bb-runtime-supplied",
+      coverage: "bb-instructions-only",
+      retention: "unknown",
+      tokenMethod: "unicode-characters-divided-by-four",
+      instructionMode: "append",
+      sources: [],
+      omittedSources: 0,
+      total: {
+        characters: 8,
+        bytes: 8,
+        estimatedTokens: 2,
+        sha256: "a".repeat(64),
+      },
+    };
+    const base = {
+      threadId: thread.id,
+      providerThreadId: null,
+      scope: threadScope(),
+      itemId: null,
+      itemKind: null,
+      parentToolCallId: null,
+    };
+    insertEvents(harness.db, harness.hub, [
+      {
+        ...base,
+        sequence: 1,
+        type: "system/context-supplied",
+        data: JSON.stringify({ snapshot: supplied }),
+      },
+      {
+        ...base,
+        threadId: other.id,
+        sequence: 1,
+        type: "system/context-supplied",
+        data: JSON.stringify({
+          snapshot: { ...supplied, requestId: "other-request" },
+        }),
+      },
+    ]);
+    const read = async () =>
+      (
+        await harness.app.request(`/api/v1/threads/${thread.id}/context`)
+      ).json();
+    expect(await read()).toEqual({
+      usage: null,
+      experimental_sources: supplied,
+    });
+    insertEvents(harness.db, harness.hub, [
+      {
+        ...base,
+        sequence: 2,
+        type: "system/operation",
+        data: JSON.stringify({
+          operation: THREAD_CONTEXT_CLEAR_OPERATION,
+          operationId: "clear-sources",
+          status: "completed",
+          message: "Fresh context",
+        }),
+      },
+    ]);
+    expect(await read()).toEqual({ usage: null, experimental_sources: null });
   });
 });

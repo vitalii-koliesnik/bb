@@ -3517,6 +3517,17 @@ function listLatestRowsForContextWindowUsage(
   ].sort((left, right) => left.sequence - right.sequence);
 }
 
+export function getLatestContextSourcesRow(
+  db: DbConnection,
+  args: ListContextWindowUsageRowsArgs,
+): StoredEventRow | null {
+  return db.select(storedEventRowFields).from(events).where(and(
+    eq(events.threadId, args.threadId),
+    gte(events.sequence, args.sequenceStart),
+    eq(events.type, "system/context-supplied"),
+  )).orderBy(desc(events.sequence)).limit(1).get() ?? null;
+}
+
 export function listContextWindowUsageRows(
   db: DbConnection,
   args: ListContextWindowUsageRowsArgs,

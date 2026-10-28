@@ -67,3 +67,28 @@ describe("bb thread context", () => {
     ).toEqual({ usage: null });
   });
 });
+
+describe("supplied context output", () => {
+  setupCommandOutputTestEnvironment();
+  it("shows supplied source estimates even before a provider usage total exists", async () => {
+    stubServerApi({
+      "v1.threads.:id.context.$get": vi.fn(async () => ({
+        usage: null,
+        experimental_sources: {
+          total: { estimatedTokens: 12 },
+          capturedAt: "2026-10-28T00:00:00Z",
+          omittedSources: 0,
+          sources: [{ label: ".bb/AGENTS.md", estimatedTokens: 12, bytes: 48 }],
+        },
+      })),
+    });
+    await runCommand(["thread", "context", "thread-1"], (program) =>
+      registerThreadCommands(program, () => "http://server"),
+    );
+    const text = collectLogLines(vi.mocked(console.log)).join("\n");
+    expect(text).toContain("BB-supplied instructions: ~12 tokens");
+    expect(text).toContain(
+      "Provider-native documents, tool reads and retention are unknown",
+    );
+  });
+});

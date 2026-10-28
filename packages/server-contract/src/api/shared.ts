@@ -2,6 +2,7 @@ import { z } from "zod";
 import {
   canonicalizeHostPath,
   contextSnapshotSchema,
+  contextSourcesSnapshotSchema,
   changedMessageLenientSchema,
   changedMessageSchema,
   threadUsageCostSchema,
@@ -52,6 +53,7 @@ export type ThreadContextWindowUsage = z.infer<
 
 export const threadContextResponseSchema = z.object({
   usage: threadContextWindowUsageSchema.nullable(),
+  experimental_sources: contextSourcesSnapshotSchema.nullable().optional(),
 });
 export type ThreadContextResponse = z.infer<typeof threadContextResponseSchema>;
 

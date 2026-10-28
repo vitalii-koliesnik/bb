@@ -10,6 +10,7 @@ export const systemEventTypeValues = [
   "system/manager/user_message",
   "system/thread/interrupted",
   "system/operation",
+  "system/context-supplied",
   "system/interaction/lifecycle",
   "system/permissionGrant/lifecycle",
   "system/userQuestion/lifecycle",

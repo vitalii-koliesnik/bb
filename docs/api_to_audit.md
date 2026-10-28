@@ -3914,3 +3914,28 @@ precedence, bounded discovery failure, and module-ABI preservation after Node
 replacement. Settle the shared process-local instance lifecycle across SDK
 bundle versions and whether `bundledNpmCli` belongs on the public surface before
 removing the prefix.
+
+## Supplied instruction metadata (`threads.context().experimental_sources`)
+
+The existing SDK/CLI context path returns an optional nullable source snapshot.
+New servers return null until a successful runtime submission has emitted a
+`system/context-supplied` event after the latest completed context clear. Older
+servers omit it. Metadata captures the exact BB instruction assembly, including
+wrappers and separators, after contribution selection and truncation. It does
+not re-read current files. Tokens use Unicode characters / 4, rounded up; the
+total is estimated independently and is never added to provider-reported usage.
+
+The boundary is `bb-runtime-supplied`, not a provider prompt dump. Skill catalogues,
+provider-native files, tool results and compaction retention are outside coverage.
+Source content is not persisted; SHA-256, sizes, origin and request identity are.
+The source list is capped at 512, with omitted count and full total. Per-request
+snapshots are not a cumulative billing or retained-context measurement.
+
+Core callers: the CLI context command and the existing context HTTP route use
+the same latest-event query. Host dispatch records only successful start/submit
+calls; no caller-specific instrumentation path. Daemon protocol 257 carries the
+optional metadata. Docs: Plugin Guide, Supplied instruction sources.
+
+Before stabilization: verify provider acknowledgement boundaries, duplicate
+submissions, native-source and tool-result coverage, per-source tokenizer costs,
+retention policy, schema bounds, provenance privacy and cross-version clients.

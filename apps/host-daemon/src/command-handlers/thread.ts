@@ -1,3 +1,4 @@
+import { recordSuppliedInstructions } from "./context-supplied.js";
 import fs from "node:fs/promises";
 import path from "node:path";
 import type { AgentRuntimeBridgeLaunch } from "@bb/agent-runtime";
@@ -257,6 +258,12 @@ export async function startThread(
       instructionMode: command.instructionMode,
       ...(command.fork ? { fork: command.fork } : {}),
     });
+    recordSuppliedInstructions(options, {
+      threadId: command.threadId,
+      requestId: command.requestId,
+      instructionMode: command.instructionMode,
+      contextSources: command.contextSources,
+    });
     return result;
   } catch (error) {
     await cleanupAfterPostStagingFailure(staged.cleanup);
@@ -476,6 +483,12 @@ export async function submitTurn(
       options,
     });
     await deliverSubmittedTurn(stagedCommand, entry);
+    recordSuppliedInstructions(options, {
+      threadId: command.threadId,
+      requestId: command.requestId,
+      instructionMode: command.resumeContext.instructionMode,
+      contextSources: command.resumeContext.contextSources,
+    });
   } catch (error) {
     await cleanupAfterPostStagingFailure(staged.cleanup);
     throw error;

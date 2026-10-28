@@ -25,6 +25,25 @@ export function registerContextCommand(
             threadId,
           });
           if (outputJson(opts, result)) return;
+          const sources = result.experimental_sources;
+          if (sources) {
+            console.log(
+              `BB-supplied instructions: ~${sources.total.estimatedTokens.toLocaleString("en-US")} tokens (estimate; latest submission only)`,
+            );
+            console.log(`Supplied to agent runtime: ${sources.capturedAt}`);
+            for (const source of sources.sources) {
+              console.log(
+                `  ${source.label}: ~${source.estimatedTokens.toLocaleString("en-US")} tokens / ${source.bytes.toLocaleString("en-US")} bytes`,
+              );
+            }
+            if (sources.omittedSources > 0)
+              console.log(
+                `${sources.omittedSources} additional sources omitted from the list; total includes them.`,
+              );
+            console.log(
+              "Coverage: BB instructions only. Provider-native documents, tool reads and retention are unknown. Estimates use Unicode characters / 4, including wrappers.",
+            );
+          }
           const usage = result.usage;
           if (!usage) {
             console.log("Context usage is not available yet.");

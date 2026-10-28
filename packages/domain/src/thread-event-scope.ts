@@ -202,6 +202,11 @@ const threadEventScopeDefinitionByType = {
     rationale:
       "Thread stop lifecycle event; it represents user interruption of the whole running thread.",
   },
+  "system/context-supplied": {
+    policy: "thread",
+    rationale:
+      "BB instruction metadata is correlated by request ID, independently of provider turn timing.",
+  },
   "system/operation": {
     policy: "thread-or-turn",
     rationale:

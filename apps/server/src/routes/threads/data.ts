@@ -6,6 +6,7 @@ import {
   patchThreadPluginMetadata,
   getLatestCompletedThreadContextClearSequence,
   listContextWindowUsageRows,
+  getLatestContextSourcesRow,
   getLatestThreadSequence,
   getLatestStoredConversationOutlineSequence,
   listQueuedThreadMessages,
@@ -223,10 +224,20 @@ export function registerThreadDataRoutes(app: Hono, deps: AppDeps): void {
       threadId: thread.id,
       sequenceStart,
     });
+    const sourceRow = getLatestContextSourcesRow(deps.db, {
+      threadId: thread.id,
+      sequenceStart,
+    });
+    const sourceEvent =
+      sourceRow === null ? null : toThreadEventWithMeta(sourceRow).event;
     const usage = extractThreadContextWindowUsage(
       rows.map(toThreadEventWithMeta),
     );
     return context.json({
+      experimental_sources:
+        sourceEvent?.type === "system/context-supplied"
+          ? sourceEvent.snapshot
+          : null,
       usage:
         usage === null
           ? null
